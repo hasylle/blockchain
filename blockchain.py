@@ -312,6 +312,15 @@ def register_nodes():
     return jsonify(response), 201
 
 
+@app.route('/nodes/list', methods=['GET'])
+def get_nodes():
+    response = {
+        'message': 'List of nodes successfully retrieved',
+        'total_nodes': list(blockchain.nodes),
+    }
+    return jsonify(response), 200
+
+
 @app.route('/nodes/resolve', methods=['GET'])
 def consensus():
     replaced = blockchain.resolve_conflicts()

@@ -34,7 +34,6 @@ class Blockchain:
         else:
             raise ValueError('Invalid URL')
 
-
     def valid_chain(self, chain):
         """
         Determine if a given blockchain is valid
@@ -56,7 +55,7 @@ class Blockchain:
                 return False
 
             # Check that the Proof of Work is correct
-            if not self.valid_proof(last_block['proof'], block['proof'], last_block_hash, block['rand']):
+            if not self.valid_proof(last_block['proof'], block['proof'], last_block_hash):
                 return False
 
             last_block = block
@@ -112,7 +111,7 @@ class Blockchain:
             'timestamp': time(),
             'transactions': self.current_transactions,
             'proof': proof,
-            'rand' : rand,
+            'rand': rand,
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
         }
 
@@ -155,28 +154,28 @@ class Blockchain:
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
-    def proof_of_work(self, last_block,rand):
+    def proof_of_work(self, last_block, rand):
         """
         Simple Proof of Work Algorithm:
 
          - Find a number p' such that hash(pp') contains leading 4 zeroes
          - Where p is the previous proof, and p' is the new proof
-         
+
         :param last_block: <dict> last Block
         :return: <int>
         """
 
-        last_proof = last_block['proof']
+        last_proof = str(last_block['proof']) + json.dumps(last_block['transactions']) + str(rand)
         last_hash = self.hash(last_block)
 
         proof = 0
-        while self.valid_proof(last_proof, proof, last_hash, rand) is False:
+        while self.valid_proof(last_proof, proof, last_hash) is False:
             proof += 1
 
         return proof
 
     @staticmethod
-    def valid_proof(last_proof, proof, last_hash, rand):
+    def valid_proof(last_proof, proof, last_hash):
         """
         Validates the Proof
 
@@ -187,7 +186,7 @@ class Blockchain:
 
         """
 
-        guess = f'{rand}{last_proof}{proof}{last_hash}'.encode()
+        guess = f'{last_proof}{proof}{last_hash}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:4] == "0000"
 
@@ -201,25 +200,31 @@ node_identifier = str(uuid4()).replace('-', '')
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
-def pseudo_random(seed,N):
+
+def pseudo_random(seed, N):
     hash = str(seed).encode()
     k = 0;
     rand = [];
-    while k<N:
+    while k < N:
         now = datetime.now()
         hash = hashlib.sha256(hash * now.microsecond).digest()
         for c in hash:
-            rand.append(c/255)
+            rand.append(c / 255)
             break;
-        k=k+1;
+        k = k + 1;
+
+    if N == 1:
+        return rand[0]
+
     return rand
+
 
 @app.route('/mine', methods=['GET'])
 def mine():
     # We run the proof of work algorithm to get the next proof...
     last_block = blockchain.last_block
     last_proof = last_block['proof']
-    #print(last_proof)
+    # print(last_proof)
     rand = pseudo_random(last_block['proof'], 1)
     proof = blockchain.proof_of_work(last_block, rand)
 
@@ -240,7 +245,7 @@ def mine():
         'index': block['index'],
         'transactions': block['transactions'],
         'proof': block['proof'],
-        'rand' : block['rand'],
+        'rand': block['rand'],
         'previous_hash': block['previous_hash'],
     }
     return jsonify(response), 200
@@ -306,6 +311,7 @@ def consensus():
 
     return jsonify(response), 200
 
+
 if __name__ == '__main__':
     from argparse import ArgumentParser
 
@@ -313,6 +319,5 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
     args = parser.parse_args()
     port = args.port
-
 
     app.run(host='127.0.0.1', port=port)

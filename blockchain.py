@@ -8,7 +8,6 @@ from datetime import datetime
 import requests
 from flask import Flask, jsonify, request
 
-
 class Blockchain:
     def __init__(self):
         self.current_transactions = []
@@ -222,6 +221,7 @@ def pseudo_random(seed, N):
 @app.route('/mine', methods=['GET'])
 def mine():
     # We run the proof of work algorithm to get the next proof...
+    start_time = datetime.now()
     last_block = blockchain.last_block
     last_proof = last_block['proof']
     # print(last_proof)
@@ -239,6 +239,8 @@ def mine():
     # Forge the new Block by adding it to the chain
     previous_hash = blockchain.hash(last_block)
     block = blockchain.new_block(proof, previous_hash, rand)
+
+    print('Total time: %s ms' % round(float((datetime.now() - start_time).microseconds) / 1000, 2))
 
     response = {
         'message': "New Block Forged",
@@ -269,9 +271,25 @@ def new_transaction():
 
 @app.route('/chain', methods=['GET'])
 def full_chain():
+    """
+    Get the whole block chain
+    :return:
+    """
     response = {
         'chain': blockchain.chain,
         'length': len(blockchain.chain),
+    }
+    return jsonify(response), 200
+
+
+@app.route('/latest_block', methods=['GET'])
+def latest_block():
+    """
+    Get the latest block in the block chain
+    :return:
+    """
+    response = {
+        'chain': blockchain.chain[-1],
     }
     return jsonify(response), 200
 

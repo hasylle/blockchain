@@ -8,6 +8,7 @@ from datetime import datetime
 import requests
 from flask import Flask, jsonify, request
 
+
 class Blockchain:
     def __init__(self):
         self.current_transactions = []
@@ -202,15 +203,16 @@ blockchain = Blockchain()
 
 def pseudo_random(seed, N):
     hash = str(seed).encode()
-    k = 0;
-    rand = [];
+    k = 0
+    rand = []
     while k < N:
         now = datetime.now()
         hash = hashlib.sha256(hash * now.microsecond).digest()
         for c in hash:
             rand.append(c / 255)
-            break;
-        k = k + 1;
+            break
+
+        k = k + 1
 
     if N == 1:
         return rand[0]

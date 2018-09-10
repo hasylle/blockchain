@@ -14,7 +14,8 @@ class Blockchain:
         self.current_transactions = []
         self.chain = []
         self.nodes = set()
-
+        self.total_elapsed_time = float(0.0)
+        self.average_mining_time = 0
         # Create the genesis block
         self.new_block(previous_hash='1', proof=100, rand=1)
 
@@ -241,7 +242,11 @@ def mine():
     previous_hash = blockchain.hash(last_block)
     block = blockchain.new_block(proof, previous_hash, rand)
 
-    print('Total time: %s ms' % round(float((datetime.now() - start_time).microseconds) / 1000, 2))
+    elapsed_time = round(float((datetime.now() - start_time).microseconds) / 1000, 2)
+    print('Total time: %s ms' % elapsed_time)
+    if len(blockchain.chain) <= 1000:
+        self.total_elapsed_time += elapsed_time
+        self.average_mining_time = round(self.total_elapsed_time / len(blockchain.chain), 2)
 
     response = {
         'message': "New Block Forged",
@@ -249,6 +254,7 @@ def mine():
         'transactions': block['transactions'],
         'proof': block['proof'],
         'previous_hash': block['previous_hash'],
+        'average_mining_time': self.average_mining_time,
     }
     return jsonify(response), 200
 

@@ -34,7 +34,6 @@ class Blockchain:
         else:
             raise ValueError('Invalid URL')
 
-
     def valid_chain(self, chain):
         """
         Determine if a given blockchain is valid
@@ -154,18 +153,18 @@ class Blockchain:
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
-    def proof_of_work(self, last_block,rand):
+    def proof_of_work(self, last_block, rand):
         """
         Simple Proof of Work Algorithm:
 
          - Find a number p' such that hash(pp') contains leading 4 zeroes
          - Where p is the previous proof, and p' is the new proof
-         
+
         :param last_block: <dict> last Block
         :return: <int>
         """
 
-        last_proof = last_block['proof']
+        last_proof = str(last_block['proof']) + json.dumps(last_block['transactions'])
         last_hash = self.hash(last_block)
 
         proof = 0
@@ -200,28 +199,33 @@ node_identifier = str(uuid4()).replace('-', '')
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
-def pseudo_random(seed,N):
+
+def pseudo_random(seed, N):
     hash = str(seed).encode()
-    k = 0;
-    rand = [];
-    while k<N:
+    k = 0
+    rand = []
+    while k < N:
         now = datetime.now()
         hash = hashlib.sha256(hash * now.microsecond).digest()
         for c in hash:
-            rand.append(c/255)
-            break;
-        k=k+1;
+            rand.append(c / 255)
+            break
+
+        k = k + 1
+
     if N == 1:
         return rand[0]
-    end
+
     return rand
+
 
 @app.route('/mine', methods=['GET'])
 def mine():
     # We run the proof of work algorithm to get the next proof...
+    start_time = datetime.now()
     last_block = blockchain.last_block
     last_proof = last_block['proof']
-    #print(last_proof)
+    # print(last_proof)
     rand = pseudo_random(last_block['proof'], 1)
     proof = blockchain.proof_of_work(last_block, rand)
 
@@ -236,6 +240,8 @@ def mine():
     # Forge the new Block by adding it to the chain
     previous_hash = blockchain.hash(last_block)
     block = blockchain.new_block(proof, previous_hash, rand)
+
+    print('Total time: %s ms' % round(float((datetime.now() - start_time).microseconds) / 1000, 2))
 
     response = {
         'message': "New Block Forged",
@@ -265,9 +271,25 @@ def new_transaction():
 
 @app.route('/chain', methods=['GET'])
 def full_chain():
+    """
+    Get the whole block chain
+    :return:
+    """
     response = {
         'chain': blockchain.chain,
         'length': len(blockchain.chain),
+    }
+    return jsonify(response), 200
+
+
+@app.route('/latest_block', methods=['GET'])
+def latest_block():
+    """
+    Get the latest block in the block chain
+    :return:
+    """
+    response = {
+        'chain': blockchain.chain[-1],
     }
     return jsonify(response), 200
 
@@ -290,6 +312,15 @@ def register_nodes():
     return jsonify(response), 201
 
 
+@app.route('/nodes/list', methods=['GET'])
+def get_nodes():
+    response = {
+        'message': 'List of nodes successfully retrieved',
+        'total_nodes': list(blockchain.nodes),
+    }
+    return jsonify(response), 200
+
+
 @app.route('/nodes/resolve', methods=['GET'])
 def consensus():
     replaced = blockchain.resolve_conflicts()
@@ -307,6 +338,7 @@ def consensus():
 
     return jsonify(response), 200
 
+
 if __name__ == '__main__':
     from argparse import ArgumentParser
 
@@ -314,6 +346,5 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
     args = parser.parse_args()
     port = args.port
-
 
     app.run(host='127.0.0.1', port=port)

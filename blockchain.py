@@ -16,7 +16,7 @@ class Blockchain:
         self.nodes = set()
 
         # Create the genesis block
-        self.new_block(previous_hash='1', proof=100, rand=0)
+        self.new_block(previous_hash='1', proof=100, rand=1)
 
     def register_node(self, address):
         """
@@ -56,7 +56,7 @@ class Blockchain:
                 return False
 
             # Check that the Proof of Work is correct
-            if not self.valid_proof(last_block['proof'], block['proof'], last_block_hash, block['rand']):
+            if not self.valid_proof(last_block['proof'], block['proof'], last_block_hash):
                 return False
 
             last_block = block
@@ -111,8 +111,7 @@ class Blockchain:
             'index': len(self.chain) + 1,
             'timestamp': time(),
             'transactions': self.current_transactions,
-            'proof': proof,
-            'rand' : rand,
+            'proof': proof * rand,
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
         }
 
@@ -170,13 +169,13 @@ class Blockchain:
         last_hash = self.hash(last_block)
 
         proof = 0
-        while self.valid_proof(last_proof, proof, last_hash, rand) is False:
+        while self.valid_proof(last_proof, rand*proof, last_hash) is False:
             proof += 1
 
         return proof
 
     @staticmethod
-    def valid_proof(last_proof, proof, last_hash, rand):
+    def valid_proof(last_proof, proof, last_hash):
         """
         Validates the Proof
 
@@ -187,7 +186,7 @@ class Blockchain:
 
         """
 
-        guess = f'{rand}{last_proof}{proof}{last_hash}'.encode()
+        guess = f'{last_proof}{proof}{last_hash}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:4] == "0000"
 
@@ -212,6 +211,9 @@ def pseudo_random(seed,N):
             rand.append(c/255)
             break;
         k=k+1;
+    if N == 1:
+        return rand[0]
+    end
     return rand
 
 @app.route('/mine', methods=['GET'])
@@ -240,7 +242,6 @@ def mine():
         'index': block['index'],
         'transactions': block['transactions'],
         'proof': block['proof'],
-        'rand' : block['rand'],
         'previous_hash': block['previous_hash'],
     }
     return jsonify(response), 200

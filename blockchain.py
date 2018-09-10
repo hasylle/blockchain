@@ -16,8 +16,9 @@ class Blockchain:
         self.nodes = set()
         self.total_elapsed_time = float(0.0)
         self.average_mining_time = 0
+
         # Create the genesis block
-        self.new_block(previous_hash='1', proof=100, rand=1)
+        self.new_block(previous_hash='1', proof=self.pseudo_random(100, 1))
 
     def register_node(self, address):
         """
@@ -98,7 +99,7 @@ class Blockchain:
 
         return False
 
-    def new_block(self, proof, previous_hash, rand):
+    def new_block(self, proof, previous_hash):
         """
         Create a new Block in the Blockchain
 
@@ -111,7 +112,7 @@ class Blockchain:
             'index': len(self.chain) + 1,
             'timestamp': time(),
             'transactions': self.current_transactions,
-            'proof': proof * rand,
+            'proof': proof,
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
         }
 
@@ -154,7 +155,7 @@ class Blockchain:
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
-    def proof_of_work(self, last_block, rand):
+    def proof_of_work(self, last_block):
         """
         Simple Proof of Work Algorithm:
 
@@ -165,12 +166,12 @@ class Blockchain:
         :return: <int>
         """
 
-        last_proof = str(last_block['proof']) + json.dumps(last_block['transactions'])
+        last_proof = last_block['proof']
         last_hash = self.hash(last_block)
 
-        proof = 0
-        while self.valid_proof(last_proof, rand*proof, last_hash) is False:
-            proof += 1
+        proof = self.pseudo_random(last_proof, 1)
+        while self.valid_proof(last_proof, proof, last_hash) is False:
+            proof = self.pseudo_random(last_proof, 1)
 
         return proof
 
@@ -186,10 +187,31 @@ class Blockchain:
 
         """
 
+        # invalidates proof that are not between 0 and 1
+        if (proof < 0) or (proof > 1):
+            return False
+
         guess = f'{last_proof}{proof}{last_hash}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[:4] == "0000"
+        return guess_hash[:2] == "00"
 
+    @staticmethod
+    def pseudo_random(seed,N):
+        hash = str(seed).encode()
+        k = 0;
+        rand = [];
+        while k<N:
+            now = datetime.now()
+            hash = hashlib.sha256(hash * now.microsecond).digest()
+            for c in hash:
+                rand.append(c/255)
+                break;
+            k=k+1;
+
+        if N == 1:
+            return rand[0]
+
+        return rand
 
 # Instantiate the Node
 app = Flask(__name__)
@@ -200,26 +222,6 @@ node_identifier = str(uuid4()).replace('-', '')
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
-
-def pseudo_random(seed, N):
-    hash = str(seed).encode()
-    k = 0
-    rand = []
-    while k < N:
-        now = datetime.now()
-        hash = hashlib.sha256(hash * now.microsecond).digest()
-        for c in hash:
-            rand.append(c / 255)
-            break
-
-        k = k + 1
-
-    if N == 1:
-        return rand[0]
-
-    return rand
-
-
 @app.route('/mine', methods=['GET'])
 def mine():
     # We run the proof of work algorithm to get the next proof...
@@ -227,8 +229,7 @@ def mine():
     last_block = blockchain.last_block
     last_proof = last_block['proof']
     # print(last_proof)
-    rand = pseudo_random(last_block['proof'], 1)
-    proof = blockchain.proof_of_work(last_block, rand)
+    proof = blockchain.proof_of_work(last_block)
 
     # We must receive a reward for finding the proof.
     # The sender is "0" to signify that this node has mined a new coin.
@@ -240,7 +241,7 @@ def mine():
 
     # Forge the new Block by adding it to the chain
     previous_hash = blockchain.hash(last_block)
-    block = blockchain.new_block(proof, previous_hash, rand)
+    block = blockchain.new_block(proof, previous_hash)
 
     elapsed_time = round(float((datetime.now() - start_time).microseconds) / 1000, 2)
     print('Total time: %s ms' % elapsed_time)

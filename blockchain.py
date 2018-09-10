@@ -169,9 +169,9 @@ class Blockchain:
         last_proof = last_block['proof']
         last_hash = self.hash(last_block)
 
-        proof = self.pseudo_random(last_proof, 1)
+        proof = self.pseudo_random(last_proof, 1) * 255  # Start with a whole number
         while self.valid_proof(last_proof, proof, last_hash) is False:
-            proof = self.pseudo_random(last_proof, 1)
+            proof += self.pseudo_random(last_proof, 1)  # Small increments by a number from [0, 1]
 
         return proof
 
@@ -186,11 +186,6 @@ class Blockchain:
         :return: <bool> True if correct, False if not.
 
         """
-
-        # invalidates proof that are not between 0 and 1
-        if (proof < 0) or (proof > 1):
-            return False
-
         guess = f'{last_proof}{proof}{last_hash}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:2] == "00"

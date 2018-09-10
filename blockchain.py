@@ -246,8 +246,8 @@ def mine():
     elapsed_time = round(float((datetime.now() - start_time).microseconds) / 1000, 2)
     print('Total time: %s ms' % elapsed_time)
     if len(blockchain.chain) <= 1000:
-        self.total_elapsed_time += elapsed_time
-        self.average_mining_time = round(self.total_elapsed_time / len(blockchain.chain), 2)
+        blockchain.total_elapsed_time += elapsed_time
+        blockchain.average_mining_time = round(self.total_elapsed_time / len(blockchain.chain), 2)
 
     response = {
         'message': "New Block Forged",

@@ -191,22 +191,23 @@ class Blockchain:
         return guess_hash[:2] == "00"
 
     @staticmethod
-    def pseudo_random(seed,N):
+    def pseudo_random(seed, N):
         hash = str(seed).encode()
-        k = 0;
-        rand = [];
-        while k<N:
+        k = 0
+        rand = []
+        while k < N:
             now = datetime.now()
             hash = hashlib.sha256(hash * now.microsecond).digest()
             for c in hash:
                 rand.append(c/255)
-                break;
-            k=k+1;
+                break
+            k += 1
 
         if N == 1:
             return rand[0]
 
         return rand
+
 
 # Instantiate the Node
 app = Flask(__name__)
@@ -216,6 +217,7 @@ node_identifier = str(uuid4()).replace('-', '')
 
 # Instantiate the Blockchain
 blockchain = Blockchain()
+
 
 @app.route('/mine', methods=['GET'])
 def mine():

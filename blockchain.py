@@ -242,7 +242,7 @@ def mine():
     print('Total time: %s ms' % elapsed_time)
     if len(blockchain.chain) <= 1000:
         blockchain.total_elapsed_time += elapsed_time
-        blockchain.average_mining_time = round(self.total_elapsed_time / len(blockchain.chain), 2)
+        blockchain.average_mining_time = round(blockchain.total_elapsed_time / len(blockchain.chain), 2)
 
     response = {
         'message': "New Block Forged",
@@ -250,7 +250,7 @@ def mine():
         'transactions': block['transactions'],
         'proof': block['proof'],
         'previous_hash': block['previous_hash'],
-        'average_mining_time': self.average_mining_time,
+        'average_mining_time': blockchain.average_mining_time,
     }
     return jsonify(response), 200
 

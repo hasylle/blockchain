@@ -240,12 +240,11 @@ def mine():
     previous_hash = blockchain.hash(last_block)
     block = blockchain.new_block(proof, previous_hash)
 
-    elapsed_time = round(float((datetime.now() - start_time).microseconds) / 1000, 2)
-    print('Total time: %s ms' % elapsed_time)
+    elapsed_time = (datetime.now() - start_time)
+    print('Total time: %s ms' % (elapsed_time.microseconds/1000 + elapsed_time.seconds*1000))
     if len(blockchain.chain) <= 1000:
-        blockchain.total_elapsed_time += elapsed_time
+        blockchain.total_elapsed_time += elapsed_time.microseconds/1000 + elapsed_time.seconds*1000
         blockchain.average_mining_time = round(blockchain.total_elapsed_time / len(blockchain.chain), 2)
-
     response = {
         'message': "New Block Forged",
         'index': block['index'],

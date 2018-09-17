@@ -170,10 +170,13 @@ class Blockchain:
         last_proof = last_block['proof']
         last_hash = self.hash(last_block)
 
-        proof = random.uniform(0,1) * 255  # Start with a whole number
-        while self.valid_proof(last_proof, proof, last_hash) is False:
-            proof += random.uniform(0, 1)  # Small increments by a number from [0, 1]
-
+        range = last_proof
+        proof = int(random.uniform(0, last_proof)) #random starting point
+        rand = random.uniform(0,1) #random multiplier
+        while self.valid_proof(last_proof, proof*rand, last_hash) is False:
+            proof = int(random.uniform(0, range)) #find the random number from 0 to range
+            range += 1 #increase range gradually
+        proof = proof * rand
         return proof
 
     @staticmethod

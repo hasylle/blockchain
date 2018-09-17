@@ -4,6 +4,7 @@ from time import time
 from urllib.parse import urlparse
 from uuid import uuid4
 from datetime import datetime
+import random
 
 import requests
 from flask import Flask, jsonify, request
@@ -18,7 +19,7 @@ class Blockchain:
         self.average_mining_time = 0
 
         # Create the genesis block
-        self.new_block(previous_hash='1', proof=self.pseudo_random(100, 1))
+        self.new_block(previous_hash='1', proof=random.uniform(0, 1))
 
     def register_node(self, address):
         """
@@ -169,9 +170,9 @@ class Blockchain:
         last_proof = last_block['proof']
         last_hash = self.hash(last_block)
 
-        proof = self.pseudo_random(last_proof, 1) * 255  # Start with a whole number
+        proof = random.uniform(0,1) * 255  # Start with a whole number
         while self.valid_proof(last_proof, proof, last_hash) is False:
-            proof += self.pseudo_random(last_proof, 1)  # Small increments by a number from [0, 1]
+            proof += random.uniform(0, 1)  # Small increments by a number from [0, 1]
 
         return proof
 
@@ -188,26 +189,7 @@ class Blockchain:
         """
         guess = f'{last_proof}{proof}{last_hash}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[:2] == "00"
-
-    @staticmethod
-    def pseudo_random(seed, N):
-        hash = str(seed).encode()
-        k = 0
-        rand = []
-        while k < N:
-            now = datetime.now()
-            hash = hashlib.sha256(hash * now.microsecond).digest()
-            for c in hash:
-                rand.append(c/255)
-                break
-            k += 1
-
-        if N == 1:
-            return rand[0]
-
-        return rand
-
+        return guess_hash[:4] == "0000"
 
 # Instantiate the Node
 app = Flask(__name__)

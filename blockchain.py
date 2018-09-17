@@ -221,6 +221,9 @@ blockchain = Blockchain()
 
 @app.route('/mine', methods=['GET'])
 def mine():
+    if not blockchain.current_transactions:
+        return "There are no new blocks to mine", 400
+
     # We run the proof of work algorithm to get the next proof...
     start_time = datetime.now()
     last_block = blockchain.last_block
